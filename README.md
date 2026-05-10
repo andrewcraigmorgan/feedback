@@ -1,6 +1,6 @@
 # Feedback
 
-Self-hosted Userback replacement. Embeddable widget with bug-report / feature-request flows and a built-in screen snipping tool, plus a backend that collects reports, enforces per-project domain auth, and forwards to connectors (Zoho Projects, email, more later).
+A server-hosted feedback service. Embeddable widget with bug-report / feature-request flows and a built-in screen snipping tool, plus a backend that collects reports, enforces per-project domain auth, and forwards to connectors (Zoho Projects, email, more later).
 
 No CDNs — `html2canvas` is vendored locally at `widget/vendor/`.
 
