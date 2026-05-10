@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Feedback widget demo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 60px auto; padding: 0 20px; color:#111; }
+  h1 { margin-top: 0; }
+  pre { background:#f5f6f8; padding:14px; border-radius:8px; overflow-x:auto; font-size:13px; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  .card { padding:18px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; }
+  .card h3 { margin:0 0 8px; }
+</style>
+</head>
+<body>
+<h1>Feedback widget demo</h1>
+<p>Click the chat bubble in the bottom-right corner to send feedback. Try the "Snip area" button — drag a box anywhere on this page to attach a screenshot.</p>
+
+<div class="cards">
+  <div class="card"><h3>Author Elizabeth Kostova Visits Corbenic</h3><p>Some demo content to test the snip tool against.</p></div>
+  <div class="card"><h3>Bat Boxes and Owl Roosts</h3><p>More demo content. Drag-select a region to attach.</p></div>
+</div>
+
+<h2>Embed snippet</h2>
+<pre>&lt;script src="http://localhost:3000/widget.js"
+        data-project="my-site"
+        data-accent="#1f2937"
+        data-position="bottom-right" defer&gt;&lt;/script&gt;</pre>
+
+<script src="/widget.js" data-project="default" data-accent="#1f2937" defer></script>
+</body>
+</html>
