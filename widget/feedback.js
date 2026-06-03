@@ -142,19 +142,19 @@
     var send = $('fb-send'); if (send) send.onclick = submit;
   }
 
-  // ---- snipping: snapshot page with html2canvas, then drag to crop ----
-  var html2canvasPromise = null;
-  function loadHtml2Canvas() {
-    if (window.html2canvas) return Promise.resolve(window.html2canvas);
-    if (html2canvasPromise) return html2canvasPromise;
-    html2canvasPromise = new Promise(function (resolve, reject) {
+  // ---- snipping: snapshot page with html-to-image (supports oklch / modern CSS) ----
+  var htmlToImagePromise = null;
+  function loadHtmlToImage() {
+    if (window.htmlToImage) return Promise.resolve(window.htmlToImage);
+    if (htmlToImagePromise) return htmlToImagePromise;
+    htmlToImagePromise = new Promise(function (resolve, reject) {
       var s = document.createElement('script');
-      s.src = cfg.vendor + '/html2canvas.min.js';
-      s.onload = function () { resolve(window.html2canvas); };
+      s.src = cfg.vendor + '/html-to-image.js';
+      s.onload = function () { resolve(window.htmlToImage); };
       s.onerror = reject;
       document.head.appendChild(s);
     });
-    return html2canvasPromise;
+    return htmlToImagePromise;
   }
 
   function startSnip() {
@@ -165,8 +165,9 @@
     hint.textContent = 'Capturing page…';
     document.body.appendChild(hint);
 
-    loadHtml2Canvas().then(function (h2c) {
-      return h2c(document.body, { useCORS: true, logging: false, scale: Math.min(window.devicePixelRatio || 1, 2), windowWidth: document.documentElement.scrollWidth, windowHeight: document.documentElement.scrollHeight });
+    loadHtmlToImage().then(function (hti) {
+      var scale = Math.min(window.devicePixelRatio || 1, 2);
+      return hti.toCanvas(document.body, { pixelRatio: scale });
     }).then(function (canvas) {
       hint.textContent = 'Drag to select area — Esc to cancel';
       runCrop(canvas, function (dataUrl) {
