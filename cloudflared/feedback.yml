@@ -1,0 +1,22 @@
+# Cloudflare Tunnel ingress config for the feedback server.
+#
+#   cloudflared tunnel create feedback
+#   cloudflared tunnel route dns feedback feedback.os.mtc.co.uk
+#   cp cloudflared/feedback.yml ~/.cloudflared/feedback.yml
+#   $EDITOR ~/.cloudflared/feedback.yml   # paste UUID + creds path
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now feedback-tunnel
+#
+# Then the widget embed is:
+#   <script src="https://feedback.os.mtc.co.uk/widget.js"
+#           data-project="mtcos"
+#           data-accent="#1d4ed8"
+#           defer></script>
+
+tunnel: <UUID-of-feedback-tunnel>
+credentials-file: /home/andrew/.cloudflared/<UUID>.json
+
+ingress:
+  - hostname: feedback.os.mtc.co.uk
+    service: http://127.0.0.1:3100
+  - service: http_status:404
