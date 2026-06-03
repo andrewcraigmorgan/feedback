@@ -9,11 +9,13 @@
 
 import zoho from './zoho.js';
 import email from './email.js';
+import mtcos from './mtcos.js';
 
 const REGISTRY = new Map();
 function register(c) { REGISTRY.set(c.type, c); }
 register(zoho);
 register(email);
+register(mtcos);
 
 export function listConnectors() {
   return [...REGISTRY.values()].map(({ type, label, fields }) => ({ type, label, fields }));

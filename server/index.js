@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { dispatchConnectors, listConnectors } from './connectors/index.js';
 import * as zohoOAuth from './oauth/zoho.js';
 
@@ -427,6 +428,27 @@ function mergeConnectorSecrets(prev, next) {
 
 app.get('/screenshots/:file', requireAdmin, (req, res) => {
   const f = req.params.file;
+  if (!/^[a-f0-9-]+\.png$/.test(f)) return res.status(400).end();
+  res.sendFile(path.join(SHOTS_DIR, f));
+});
+
+// Public screenshot endpoint — keyed by report ID, verified against the
+// same FEEDBACK_WEBHOOK_SECRET so only the mtcOS API (which knows the secret)
+// can build a valid token. Token = first 16 hex chars of HMAC(secret, reportId).
+// The connector puts this URL in the webhook payload; the API uses it to link
+// or embed the screenshot without exposing the admin token.
+app.get('/api/reports/:id/screenshot', (req, res) => {
+  const secret = process.env.FEEDBACK_MTCOS_WEBHOOK_SECRET;
+  if (!secret) return res.status(404).end();
+
+  const { token } = req.query;
+  const expected = createHmac('sha256', secret).update(req.params.id).digest('hex').slice(0, 16);
+  if (!token || token !== expected) return res.status(401).end();
+
+  const row = db.prepare('SELECT screenshot_path FROM reports WHERE id = ?').get(req.params.id);
+  if (!row || !row.screenshot_path) return res.status(404).end();
+
+  const f = path.basename(row.screenshot_path);
   if (!/^[a-f0-9-]+\.png$/.test(f)) return res.status(400).end();
   res.sendFile(path.join(SHOTS_DIR, f));
 });
