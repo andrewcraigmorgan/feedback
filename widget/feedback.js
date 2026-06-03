@@ -75,7 +75,12 @@
   root.className = 'fb-root';
   document.body.appendChild(root);
 
-  var state = { open: false, view: 'menu', kind: null, screenshot: null };
+  var state = { open: false, view: 'menu', kind: null, screenshot: null, message: '', reporter: '' };
+  function escHtml(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function saveFields() {
+    var msg = document.getElementById('fb-msg'); if (msg) state.message = msg.value;
+    var email = document.getElementById('fb-email'); if (email) state.reporter = email.value;
+  }
 
   function render() {
     if (!state.open) { root.innerHTML = renderLauncher(); bind(); return; }
@@ -117,8 +122,8 @@
       '  <button class="fb-close" id="fb-close" aria-label="Close">' + ICON_X + '</button>' +
       '  <button class="fb-back" id="fb-back">&larr; back</button>' +
       '  <div class="fb-form-title">' + (isBug ? 'Report a bug' : 'Request a feature') + '</div>' +
-      '  <textarea class="fb-textarea" id="fb-msg" placeholder="' + (isBug ? 'What went wrong?' : 'What would you like to see?') + '" autofocus></textarea>' +
-      '  <input class="fb-input" id="fb-email" type="email" placeholder="Your email (optional)">' +
+      '  <textarea class="fb-textarea" id="fb-msg" placeholder="' + (isBug ? 'What went wrong?' : 'What would you like to see?') + '">' + escHtml(state.message) + '</textarea>' +
+      '  <input class="fb-input" id="fb-email" type="email" placeholder="Your email (optional)" value="' + escHtml(state.reporter) + '">' +
       thumb +
       '  <div class="fb-row">' +
       '    <button class="fb-btn fb-btn-ghost" id="fb-snip">' + (state.screenshot ? 'Re-snip' : '&#9986; Snip area') + '</button>' +
@@ -137,6 +142,8 @@
     root.querySelectorAll('.fb-option').forEach(function (el) {
       el.onclick = function () { state.kind = el.dataset.kind; state.view = 'form'; render(); };
     });
+    var msg = $('fb-msg'); if (msg) msg.oninput = function () { state.message = msg.value; };
+    var email = $('fb-email'); if (email) email.oninput = function () { state.reporter = email.value; };
     var snip = $('fb-snip'); if (snip) snip.onclick = startSnip;
     var clear = $('fb-shot-clear'); if (clear) clear.onclick = function () { state.screenshot = null; render(); };
     var send = $('fb-send'); if (send) send.onclick = submit;
@@ -158,6 +165,7 @@
   }
 
   function startSnip() {
+    saveFields();
     var panel = root.querySelector('.fb-panel');
     if (panel) panel.style.display = 'none';
     var hint = document.createElement('div');
@@ -289,7 +297,7 @@
         throw new Error(j.error || ('http ' + r.status));
       });
     }).then(function () {
-      state.open = false; state.view = 'menu'; state.kind = null; state.screenshot = null;
+      state.open = false; state.view = 'menu'; state.kind = null; state.screenshot = null; state.message = ''; state.reporter = '';
       render();
       toast('Thanks — feedback sent');
     }).catch(function (err) {
