@@ -147,6 +147,27 @@
     var snip = $('fb-snip'); if (snip) snip.onclick = startSnip;
     var clear = $('fb-shot-clear'); if (clear) clear.onclick = function () { state.screenshot = null; render(); };
     var send = $('fb-send'); if (send) send.onclick = submit;
+
+    // Ctrl+V / paste anywhere on the panel — grab image from clipboard.
+    var panel = root.querySelector('.fb-panel');
+    if (panel) panel.addEventListener('paste', function (e) {
+      var items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          e.preventDefault();
+          var blob = items[i].getAsFile();
+          if (!blob) continue;
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            state.screenshot = ev.target.result;
+            render();
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+    });
   }
 
   // ---- snipping: snapshot page with html-to-image (supports oklch / modern CSS) ----
