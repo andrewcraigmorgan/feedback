@@ -5,6 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { createHmac } from 'node:crypto';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { dispatchConnectors, listConnectors } from './connectors/index.js';
 import * as zohoOAuth from './oauth/zoho.js';
 
@@ -13,6 +14,35 @@ const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(ROOT, 'data');
 const SHOTS_DIR = path.join(DATA_DIR, 'screenshots');
 fs.mkdirSync(SHOTS_DIR, { recursive: true });
+
+// R2 client — used when R2_ACCESS_KEY_ID is set. Falls back to local disk if not.
+const r2 = process.env.R2_ACCESS_KEY_ID ? new S3Client({
+  region: 'auto',
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId:     process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+}) : null;
+const R2_BUCKET     = process.env.R2_BUCKET     ?? 'mtcos';
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, '');
+
+async function storeScreenshot(id, buf) {
+  if (r2) {
+    const key = `feedback/screenshots/${id}.png`;
+    await r2.send(new PutObjectCommand({
+      Bucket:      R2_BUCKET,
+      Key:         key,
+      Body:        buf,
+      ContentType: 'image/png',
+    }));
+    return R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${key}` : null;
+  }
+  // Local fallback
+  const fname = `${id}.png`;
+  fs.writeFileSync(path.join(SHOTS_DIR, fname), buf);
+  return fname; // relative path used by local serving endpoint
+}
 
 const db = new Database(path.join(DATA_DIR, 'feedback.db'));
 db.exec(`
@@ -151,7 +181,7 @@ app.use('/widget/vendor', express.static(path.join(ROOT, 'widget', 'vendor'), {
   setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'),
 }));
 
-app.post('/api/feedback', (req, res) => {
+app.post('/api/feedback', async (req, res) => {
   const { kind, message, url, userAgent, viewport, reporter, project, screenshot } = req.body || {};
   if (!kind || !message) return res.status(400).json({ error: 'kind and message required' });
   if (!['bug', 'feature'].includes(kind)) return res.status(400).json({ error: 'invalid kind' });
@@ -169,9 +199,7 @@ app.post('/api/feedback', (req, res) => {
     const b64 = screenshot.slice('data:image/png;base64,'.length);
     const buf = Buffer.from(b64, 'base64');
     if (buf.length <= 8 * 1024 * 1024) {
-      const fname = `${id}.png`;
-      fs.writeFileSync(path.join(SHOTS_DIR, fname), buf);
-      shotPath = fname;
+      shotPath = await storeScreenshot(id, buf);
     }
   }
 
