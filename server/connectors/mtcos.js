@@ -25,20 +25,28 @@ function screenshotToken(secret, reportId) {
 function buildPayload(report, config, secret) {
   const { projectId, taskListId, feedbackServerUrl } = config;
   const serverUrl = (feedbackServerUrl || '').replace(/\/$/, '');
-  const hasShot   = serverUrl && report.id && report.screenshot_path;
+  // If screenshot_path is an https:// URL (R2), use it directly.
+  // Otherwise build the token-gated local serve URL.
+  let screenshotUrl;
+  if (report.screenshot_path) {
+    if (report.screenshot_path.startsWith('https://')) {
+      screenshotUrl = report.screenshot_path;
+    } else if (serverUrl) {
+      screenshotUrl = `${serverUrl}/api/reports/${report.id}/screenshot?token=${screenshotToken(secret, report.id)}`;
+    }
+  }
+
   return {
-    kind:         report.kind,
-    message:      report.message,
+    kind: report.kind,
+    message: report.message,
     projectId,
-    taskListId:   taskListId || undefined,
-    url:          report.url        || undefined,
-    reporter:     report.reporter   || undefined,
-    viewport:     report.viewport   || undefined,
-    user_agent:   report.user_agent || undefined,
+    taskListId: taskListId || undefined,
+    url: report.url || undefined,
+    reporter: report.reporter || undefined,
+    viewport: report.viewport || undefined,
+    user_agent: report.user_agent || undefined,
     submitted_at: new Date(report.created_at).toISOString(),
-    screenshot_url: hasShot
-      ? `${serverUrl}/api/reports/${report.id}/screenshot?token=${screenshotToken(secret, report.id)}`
-      : undefined,
+    screenshot_url: screenshotUrl,
   };
 }
 
